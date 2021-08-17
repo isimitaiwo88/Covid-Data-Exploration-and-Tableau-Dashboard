@@ -218,12 +218,57 @@ FROM #PercentPopulationVaccinated
 --------------------------------------------------
 
 --CREATE A VIEW
+DROP TABLE if exists #PercentPopulationVaccinated
 
-CREATE VIEW PercentPopulationVaccinated as
+CREATE VIEW PercentPopulationVaccinated1 as
 Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
 SUM(CONVERT(int, vac.new_vaccinations)) OVER (partition by dea.location ORDER BY dea.location,dea.date) as AccumlatedVac
 FROM CovidDataProject..CovidDeaths dea JOIN CovidDataProject..CovidVaccinations vac
 ON dea.location = vac.location AND dea.date = vac.date
 WHERE dea.continent is not null
 
+SELECT SUM(new_cases) AS Total_cases, SUM(cast(new_deaths as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(new_cases)*100 AS DeathPercentage
+FROM CovidDataProject..CovidDeaths
+--WHERE LOCATION LIKE 'Africa'
+WHERE CONTINENT is not null
+--GROUP BY date
+ORDER BY 1,2
 
+SELECT SUM(new_cases) as total_cases, SUM(cast(new_death as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(new_cases)*100 AS DeathPercentage
+FROM CovidDataProject..CovidDeaths
+WHERE Location LIKE 'Nigeria'
+WHERE Location = 'World'
+GROUP BY date
+ORDER BY 1,2
+
+--would like view death count by continent
+--remove world, european union and international because it will repeat the count which will give
+--inaccurate numbers of deaths
+
+Select location, SUM(cast(new_deaths as int)) as TOTALDEATHCOUNT
+FROM CovidDataProject..CovidDeaths
+WHERE continent is null
+AND location not in ('World', 'European Union', 'International')
+GROUP BY location
+ORDER BY TOTALDEATHCOUNT DESC
+
+
+--would like view Infection rate compared to Population of each country
+--highest infection rate to the lowest infection rate
+
+SELECT location, population, MAX(total_cases) AS HighestInfectionCount, MAX((total_cases/population))*100 as PercentagePopulationInfected
+FROM CovidDataProject..CovidDeaths
+WHERE continent is not null
+AND location not in ('World', 'European Union', 'International', 'South America','North America','Europe','Asia','Africa','Oceania')
+GROUP BY Location, Population
+ORDER BY PercentagePopulationInfected DESC
+
+
+--view Population Percent Infected
+
+SELECT location, population, date, MAX(total_cases) as HighestInfectionCount, MAX((total_cases/population))*100 as PercentagePopulationInfected
+FROM CovidDataProject..CovidDeaths
+--WHERE continent is not null
+--AND location not in ('World', 'European Union', 'International', 'South America','North America','Europe','Asia','Africa','Oceania')
+GROUP BY Location, Population, date
+ORDER BY PercentagePopulationInfected DESC
